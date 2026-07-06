@@ -1,0 +1,2193 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>杭州通勤成本测算器</title>
+  <style>
+    :root {
+      --blue: #1f6fff;
+      --blue-dark: #1559d6;
+      --blue-soft: #eef4ff;
+      --bg: #f5f7fb;
+      --card: #fff;
+      --text: #172033;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --green: #12a150;
+      --orange: #ff8a00;
+      --red: #e5484d;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      width: min(100%, 480px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding-bottom: 34px;
+      background:
+        radial-gradient(circle at top right, rgba(31, 111, 255, 0.14), transparent 32%),
+        linear-gradient(180deg, #fff 0%, #f5f7fb 24%, #f5f7fb 100%);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.68);
+      padding: 22px 20px 12px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--blue);
+      background: var(--blue-soft);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .progress {
+      height: 8px;
+      margin-top: 16px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #edf1f7;
+    }
+
+    .progress span {
+      display: block;
+      width: 20%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), #54a1ff);
+      transition: width 0.28s ease;
+    }
+
+    main {
+      padding: 18px 16px 0;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid rgba(229, 231, 235, 0.92);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .step-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .step-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .step-count {
+      color: #111827;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .step-line {
+      height: 4px;
+      margin-bottom: 22px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #edf1f7;
+    }
+
+    .step-line span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    h2 {
+      margin: 0 0 7px;
+      font-size: 21px;
+      line-height: 1.28;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 18px 0 10px;
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0 12px;
+      color: var(--text);
+      background: #fff;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(31, 111, 255, 0.1);
+    }
+
+    .poi-tip {
+      margin: 8px 2px 0;
+      color: #7a8699;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .poi-tip strong {
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .amap-sug-result {
+      z-index: 10000 !important;
+      border: 1px solid #dbe4f0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14) !important;
+      overflow: hidden !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif !important;
+    }
+
+    .amap-sug-result .auto-item {
+      padding: 10px 12px !important;
+      color: var(--text) !important;
+      font-size: 13px !important;
+      line-height: 1.45 !important;
+    }
+
+    .amap-sug-result .auto-item:hover,
+    .amap-sug-result .auto-item-selected {
+      color: var(--blue) !important;
+      background: var(--blue-soft) !important;
+    }
+
+    .input-with-unit {
+      position: relative;
+    }
+
+    .input-with-unit input {
+      padding-right: 56px;
+    }
+
+    .unit {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      color: #6b7280;
+      font-size: 13px;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .chips.mode {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .chips.traffic-mode {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 6px;
+      color: #374151;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .chip.icon-chip {
+      flex-direction: column;
+      gap: 4px;
+      min-height: 64px;
+      font-size: 12px;
+    }
+
+    .chip svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .chip.active {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-soft);
+      box-shadow: inset 0 0 0 1px rgba(31, 111, 255, 0.18);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      height: 48px;
+      border: none;
+      border-radius: 13px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      flex: 1;
+      color: #fff;
+      background: linear-gradient(180deg, var(--blue), var(--blue-dark));
+      box-shadow: 0 10px 22px rgba(31, 111, 255, 0.25);
+    }
+
+    .btn-secondary {
+      width: 112px;
+      color: #374151;
+      background: #eef1f6;
+      border: 1px solid #e2e7ef;
+    }
+
+    .small-note {
+      margin-top: 13px;
+      color: #9ca3af;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .auto-estimate-note {
+      margin: 8px 2px 0;
+      color: #7a8699;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .auto-estimate-note strong {
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .map-config {
+      margin: 0 0 14px;
+      border: 1px solid #dbe4f0;
+      border-radius: 12px;
+      padding: 10px 12px 12px;
+      background: #fbfdff;
+    }
+
+    .map-config summary {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .map-config-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .map-config label {
+      margin: 0 0 6px;
+      color: #475569;
+      font-size: 12px;
+    }
+
+    .map-config input {
+      height: 40px;
+      font-size: 13px;
+    }
+
+    .route-status {
+      margin: 8px 2px 0;
+      color: #7a8699;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .route-status.success {
+      color: var(--green);
+    }
+
+    .route-status.warn {
+      color: var(--orange);
+    }
+
+    .route-status.error {
+      color: var(--red);
+    }
+
+    .rent-reference {
+      margin: 8px 2px 0;
+      color: #7a8699;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .rent-reference strong {
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .hidden-map {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .amap-logo,
+    .amap-copyright,
+    .amap-control,
+    .amap-mcode {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .summary {
+      margin-top: 10px;
+      border: 1px solid #bfdfd2;
+      border-radius: 12px;
+      padding: 14px;
+      background: linear-gradient(135deg, #f0fff7, #fff);
+    }
+
+    .summary strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .summary p {
+      margin: 8px 0 0;
+      color: #374151;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .report-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .report-tab {
+      min-height: 38px;
+      border: 1px solid #dbe4f0;
+      border-radius: 10px;
+      padding: 7px 6px;
+      color: #374151;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .report-tab.active {
+      color: #fff;
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      min-height: 96px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .metric .name {
+      min-height: 18px;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric .value {
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 950;
+      line-height: 1.14;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 6px;
+      color: #6b7280;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .green {
+      color: var(--green) !important;
+    }
+
+    .orange {
+      color: var(--orange) !important;
+    }
+
+    .red {
+      color: var(--red) !important;
+    }
+
+    .blue {
+      color: var(--blue) !important;
+    }
+
+    .score-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 16px 0 6px;
+      border: 1px solid #fed7aa;
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff7ed;
+    }
+
+    .score {
+      position: relative;
+      display: grid;
+      flex: 0 0 auto;
+      width: 76px;
+      height: 76px;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--score-color) 0deg, var(--score-color) var(--deg), #ffedd5 var(--deg), #ffedd5 360deg);
+    }
+
+    .score::after {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff;
+      content: "";
+    }
+
+    .score span {
+      position: relative;
+      z-index: 1;
+      font-size: 22px;
+      font-weight: 950;
+    }
+
+    .score-copy h3 {
+      margin: 0 0 5px;
+      font-size: 16px;
+    }
+
+    .score-copy p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .quality-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .quality-row {
+      display: grid;
+      grid-template-columns: 88px 1fr 34px;
+      gap: 9px;
+      align-items: center;
+      color: #374151;
+      font-size: 13px;
+    }
+
+    .quality-bar {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eef1f6;
+    }
+
+    .quality-bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+    }
+
+    .list {
+      display: grid;
+      gap: 0;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      display: flex;
+      gap: 9px;
+      border-bottom: 1px solid #eef1f6;
+      padding: 10px 0;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .list li:last-child {
+      border-bottom: none;
+    }
+
+    .ok,
+    .no {
+      display: inline-grid;
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      margin-top: 1px;
+      place-items: center;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .ok {
+      background: var(--green);
+    }
+
+    .no {
+      background: var(--red);
+    }
+
+    .compare-table {
+      width: 100%;
+      margin-top: 12px;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      font-size: 13px;
+    }
+
+    .compare-table th,
+    .compare-table td {
+      border: 1px solid #edf0f5;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .compare-table th {
+      color: #6b7280;
+      background: #f8fafc;
+      font-size: 12px;
+    }
+
+    .advice-box {
+      margin-top: 16px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      padding: 14px;
+      background: linear-gradient(135deg, #f8fbff, #eef6ff);
+    }
+
+    .advice-box strong {
+      display: block;
+      color: var(--blue);
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .advice-box p {
+      margin: 8px 0 0;
+      color: #243044;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .footer-note {
+      margin: 14px 2px;
+      color: #9ca3af;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 50;
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.92);
+      font-size: 14px;
+      opacity: 0;
+      transform: translate(-50%, 10px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 370px) {
+      .brand h1 {
+        font-size: 22px;
+      }
+
+      .chips,
+      .chips.mode,
+      .chips.traffic-mode {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .row,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-secondary {
+        width: 96px;
+      }
+
+      .quality-row {
+        grid-template-columns: 76px 1fr 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div>
+          <h1>杭州通勤成本测算器</h1>
+          <p>帮你判断住远一点，到底是不是真的省钱。</p>
+        </div>
+        <div class="tag">老田说 · MVP</div>
+      </div>
+      <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+    </header>
+
+    <main>
+      <section class="card step" data-step="1">
+        <div class="step-head">
+          <p class="step-title">输入信息</p>
+          <span class="step-count">1/5</span>
+        </div>
+        <div class="step-line" aria-hidden="true"><span style="width: 20%;"></span></div>
+        <h2>你现在的通勤情况是怎样的？</h2>
+        <p class="hint">填写信息，帮你算一笔通勤账。</p>
+
+        <label for="workPlace">工作地点</label>
+        <input id="workPlace" name="commute_query_a" value="未来科技城阿里巴巴西溪园区" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore placeholder="输入公司、园区、地铁站">
+
+        <label for="currentHome">当前居住地</label>
+        <input id="currentHome" name="commute_query_b" value="良渚文化村" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore placeholder="输入小区、板块、地铁站">
+
+        <label for="targetHome">候选居住地</label>
+        <input id="targetHome" name="commute_query_c" value="临平新城" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore placeholder="输入候选小区或板块">
+        <p class="poi-tip" id="poiTip"><strong>地址联想：</strong>输入几个字后选择高德 POI，可减少手动输入。</p>
+
+        <div class="actions">
+          <button class="btn-primary" type="button" data-next>下一步</button>
+        </div>
+        <div class="small-note">信息仅用于本地测算，不会泄露</div>
+      </section>
+
+      <section class="card step hidden" data-step="2">
+        <div class="step-head">
+          <p class="step-title">通勤方式与频率</p>
+          <span class="step-count">2/5</span>
+        </div>
+        <div class="step-line" aria-hidden="true"><span style="width: 40%;"></span></div>
+        <h2>你主要怎么上下班？</h2>
+        <p class="hint">这一步会根据起终点调用地图路线规划，查不到时仍可手动填写。</p>
+
+        <label>主要通勤方式</label>
+        <div class="chips mode" data-name="mode">
+          <button class="chip icon-chip active" type="button" data-value="地铁/公交">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="15" rx="3"></rect><path d="M8 21l2-3"></path><path d="M16 21l-2-3"></path><path d="M8 8h8"></path><path d="M8 13h.01"></path><path d="M16 13h.01"></path></svg>
+            地铁/公交
+          </button>
+          <button class="chip icon-chip" type="button" data-value="自驾">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l2-5h10l2 5"></path><rect x="3" y="12" width="18" height="6" rx="2"></rect><path d="M7 18v2"></path><path d="M17 18v2"></path><path d="M7 15h.01"></path><path d="M17 15h.01"></path></svg>
+            自驾
+          </button>
+          <button class="chip icon-chip" type="button" data-value="骑行/电动车">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="3"></circle><circle cx="18" cy="17" r="3"></circle><path d="M9 17l3-8h3l3 8"></path><path d="M11 11h5"></path><path d="M12 9l-2-2"></path></svg>
+            骑行/电动车
+          </button>
+          <button class="chip icon-chip" type="button" data-value="步行">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"></circle><path d="M12 7l-2 5 4 2 2 6"></path><path d="M10 12l-3 3"></path><path d="M14 14l-3 6"></path></svg>
+            步行
+          </button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="currentTime">当前单程时间</label>
+            <div class="input-with-unit">
+              <input id="currentTime" type="number" min="1" placeholder="等待地图获取">
+              <span class="unit">分钟</span>
+            </div>
+          </div>
+          <div>
+            <label for="targetTime">候选单程时间</label>
+            <div class="input-with-unit">
+              <input id="targetTime" type="number" min="1" placeholder="等待地图获取">
+              <span class="unit">分钟</span>
+            </div>
+          </div>
+        </div>
+        <p class="auto-estimate-note" id="timeAutoNote">进入本页后会尝试查询真实路线耗时，也可以直接手动填写。</p>
+        <button class="btn-secondary" type="button" id="routeRefreshBtn" style="width: 100%; margin-top: 10px;">重新获取真实时间</button>
+        <p class="route-status" id="routeStatus">等待路线查询。</p>
+
+        <label>每周通勤几天？</label>
+        <div class="chips" data-name="days">
+          <button class="chip" type="button" data-value="3">3天</button>
+          <button class="chip" type="button" data-value="4">4天</button>
+          <button class="chip active" type="button" data-value="5">5天</button>
+          <button class="chip" type="button" data-value="6">6天</button>
+        </div>
+
+        <label>是否经常加班？</label>
+        <div class="chips" data-name="overtime">
+          <button class="chip" type="button" data-value="基本不">基本不</button>
+          <button class="chip active" type="button" data-value="偶尔">偶尔</button>
+          <button class="chip" type="button" data-value="经常">经常</button>
+        </div>
+
+        <div class="actions">
+          <button class="btn-secondary" type="button" data-prev>上一步</button>
+          <button class="btn-primary" type="button" data-next>下一步</button>
+        </div>
+      </section>
+
+      <section class="card step hidden" data-step="3">
+        <div class="step-head">
+          <p class="step-title">居住成本</p>
+          <span class="step-count">3/5</span>
+        </div>
+        <div class="step-line" aria-hidden="true"><span style="width: 60%;"></span></div>
+        <h2>住远一点，每月能省多少钱？</h2>
+        <p class="hint">这里先算现金账，后面再把通勤时间折算进去。</p>
+
+        <div class="row">
+          <div>
+            <label for="currentRent">当前居住成本</label>
+            <div class="input-with-unit">
+              <input id="currentRent" type="number" value="4000" min="0" placeholder="例如：4000">
+              <span class="unit">元</span>
+            </div>
+          </div>
+          <div>
+            <label for="targetRent">候选居住成本</label>
+            <div class="input-with-unit">
+              <input id="targetRent" type="number" value="2800" min="0" placeholder="例如：2800">
+              <span class="unit">元</span>
+            </div>
+          </div>
+        </div>
+        <p class="rent-reference" id="rentAutoNote"><strong>租金参考：</strong>进入本页后按居住地匹配公开挂牌参考价，可自行修改。</p>
+        <button class="btn-secondary" type="button" id="rentRefreshBtn" style="width: 100%; margin-top: 10px;">重新填入租金参考</button>
+
+        <label>交通成本估算方式</label>
+        <div class="chips traffic-mode" data-name="trafficCostMode">
+          <button class="chip active" type="button" data-value="按通勤方式">按通勤方式</button>
+          <button class="chip" type="button" data-value="公共交通">公共交通</button>
+          <button class="chip" type="button" data-value="自驾">自驾</button>
+          <button class="chip" type="button" data-value="低成本">骑行/步行</button>
+        </div>
+        <p class="auto-estimate-note" id="trafficAutoNote"><strong>交通成本：</strong>进入本页后会按通勤方式估算，也可以手动修改。</p>
+
+        <div class="row">
+          <div>
+            <label for="currentTraffic">当前交通成本</label>
+            <div class="input-with-unit">
+              <input id="currentTraffic" type="number" value="250" min="0" placeholder="例如：250">
+              <span class="unit">元</span>
+            </div>
+          </div>
+          <div>
+            <label for="targetTraffic">候选交通成本</label>
+            <div class="input-with-unit">
+              <input id="targetTraffic" type="number" value="500" min="0" placeholder="例如：500">
+              <span class="unit">元</span>
+            </div>
+          </div>
+        </div>
+
+        <label>是否有房贷？</label>
+        <div class="chips" data-name="housingType">
+          <button class="chip" type="button" data-value="有房贷">有房贷</button>
+          <button class="chip active" type="button" data-value="无房贷">无房贷</button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="extraCost">其他月度额外支出</label>
+            <div class="input-with-unit">
+              <input id="extraCost" type="number" value="0" min="0" placeholder="停车/物业等">
+              <span class="unit">元</span>
+            </div>
+          </div>
+          <div>
+            <label for="movingCost">搬家摊销成本</label>
+            <div class="input-with-unit">
+              <input id="movingCost" type="number" value="0" min="0" placeholder="可不填">
+              <span class="unit">元</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-secondary" type="button" data-prev>上一步</button>
+          <button class="btn-primary" type="button" data-next>下一步</button>
+        </div>
+      </section>
+
+      <section class="card step hidden" data-step="4">
+        <div class="step-head">
+          <p class="step-title">个人偏好</p>
+          <span class="step-count">4/5</span>
+        </div>
+        <div class="step-line" aria-hidden="true"><span style="width: 80%;"></span></div>
+        <h2>你最看重什么？</h2>
+        <p class="hint">这里支持多选，会影响风险分和最终建议。</p>
+
+        <label>你最看重什么？（可多选）</label>
+        <div class="chips" data-name="priorities" data-multi="true">
+          <button class="chip active" type="button" data-value="通勤时间">通勤时间</button>
+          <button class="chip" type="button" data-value="居住成本">居住成本</button>
+          <button class="chip" type="button" data-value="房子大小">房子大小</button>
+          <button class="chip" type="button" data-value="生活便利">生活便利</button>
+          <button class="chip" type="button" data-value="环境质量">环境质量</button>
+          <button class="chip" type="button" data-value="离对象/家人近">对象/家人近</button>
+          <button class="chip" type="button" data-value="未来发展">未来发展</button>
+          <button class="chip" type="button" data-value="其他">其他</button>
+        </div>
+
+        <label>单程最多能接受多久？</label>
+        <div class="chips" data-name="limit">
+          <button class="chip" type="button" data-value="30">30分钟以内</button>
+          <button class="chip" type="button" data-value="45">45分钟以内</button>
+          <button class="chip active" type="button" data-value="60">60分钟以内</button>
+          <button class="chip" type="button" data-value="75">75分钟以上</button>
+        </div>
+
+        <label>你对通勤的忍耐度？</label>
+        <div class="chips" data-name="tolerance">
+          <button class="chip" type="button" data-value="低">低</button>
+          <button class="chip active" type="button" data-value="中">中</button>
+          <button class="chip" type="button" data-value="高">高</button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="monthlySalary">月工资</label>
+            <div class="input-with-unit">
+              <input id="monthlySalary" type="number" value="10000" min="0" placeholder="例如：10000">
+              <span class="unit">元/月</span>
+            </div>
+          </div>
+          <div>
+            <label for="timeValue">时间折算价值</label>
+            <div class="input-with-unit">
+              <input id="timeValue" type="number" value="57" min="0" placeholder="例如：57">
+              <span class="unit">元/小时</span>
+            </div>
+          </div>
+        </div>
+        <p class="auto-estimate-note" id="timeValueAutoNote"><strong>时间价值：</strong>按月工资 ÷ 22个工作日 ÷ 8小时自动估算，可手动修改。</p>
+
+        <div class="actions">
+          <button class="btn-secondary" type="button" data-prev>上一步</button>
+          <button class="btn-primary" type="button" id="generateBtn">提交测算</button>
+        </div>
+      </section>
+
+      <section class="card step hidden" data-step="5">
+        <div class="step-head">
+          <p class="step-title">测算报告</p>
+          <span class="step-count">5/5</span>
+        </div>
+        <div class="step-line" aria-hidden="true"><span style="width: 100%;"></span></div>
+        <h2>你的通勤成本测算报告</h2>
+        <p class="hint" id="reportMeta">根据你填写的信息生成，仅作生活决策参考。</p>
+
+        <div class="report-tabs" aria-hidden="true">
+          <div class="report-tab">通勤账单</div>
+          <div class="report-tab active">测算报告</div>
+          <div class="report-tab">方案对比</div>
+        </div>
+
+        <div class="summary">
+          <strong id="oneLine">一句话结论生成中...</strong>
+          <p id="oneLineDesc"></p>
+        </div>
+
+        <h3>核心数据对比</h3>
+        <div class="metrics">
+          <div class="metric">
+            <div class="name">月度居住成本差</div>
+            <div class="value" id="rentDiff">-</div>
+            <small>候选方案更贵或更便宜</small>
+          </div>
+          <div class="metric">
+            <div class="name">月度通勤时间差</div>
+            <div class="value" id="timeDiff">-</div>
+            <small>按往返和通勤天数折算</small>
+          </div>
+          <div class="metric">
+            <div class="name">月度交通成本差</div>
+            <div class="value" id="trafficDiff">-</div>
+            <small>含额外停车/物业等支出</small>
+          </div>
+          <div class="metric">
+            <div class="name">时间折算成本</div>
+            <div class="value" id="timeCost">-</div>
+            <small id="timeCostNote">-</small>
+          </div>
+        </div>
+
+        <div class="score-box">
+          <div class="score" id="scoreCircle" style="--deg: 0deg; --score-color: var(--orange);">
+            <span id="scoreNum">0</span>
+          </div>
+          <div class="score-copy">
+            <h3 id="scoreTitle">生活质量影响评分</h3>
+            <p id="scoreDesc">等待计算。</p>
+          </div>
+        </div>
+
+        <div class="quality-list" id="qualityList"></div>
+
+        <h3>详细成本分析（每月）</h3>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>项目</th>
+              <th>当前方案</th>
+              <th>候选方案</th>
+              <th>差值</th>
+            </tr>
+          </thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+
+        <h3>适合人群</h3>
+        <ul class="list" id="fitList"></ul>
+
+        <h3>不适合人群</h3>
+        <ul class="list" id="unfitList"></ul>
+
+        <div class="advice-box">
+          <strong>最终建议</strong>
+          <p id="finalAdvice"></p>
+        </div>
+
+        <p class="footer-note">注：本测算结果仅供参考，实际情况会受个人生活方式、工作安排、路线稳定性影响。</p>
+
+        <div class="actions">
+          <button class="btn-secondary" type="button" id="restartBtn">重新测算</button>
+          <button class="btn-primary" type="button" id="copyBtn">复制结论</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">已复制</div>
+  <script>
+    let currentStep = 1;
+
+    const state = {
+      mode: "地铁/公交",
+      days: 5,
+      overtime: "偶尔",
+      housingType: "无房贷",
+      priorities: ["通勤时间"],
+      limit: 60,
+      tolerance: "中",
+      trafficCostMode: "按通勤方式"
+    };
+
+    const lastReport = {
+      text: ""
+    };
+
+    const AMAP_CONFIG = {
+      key: "717c9bb5cba294b46c3c97108ae9491a",
+      securityJsCode: "bbac576aaaf1cf7254cc44e1e1dc36af"
+    };
+
+    const timeTouched = {
+      current: false,
+      target: false
+    };
+
+    const rentTouched = {
+      current: false,
+      target: false
+    };
+
+    const trafficTouched = {
+      current: false,
+      target: false
+    };
+
+    let timeValueTouched = false;
+
+    const routeState = {
+      loaderPromise: null,
+      amapPromise: null,
+      amap: null,
+      isResolving: false,
+      autocompleteReady: false,
+      lastRoutes: {
+        current: null,
+        target: null
+      }
+    };
+
+    const rentReferenceProfiles = [
+      { name: "钱江新城", keys: ["钱江新城", "市民中心", "万象城", "来福士"], rent: 6200, low: 5200, high: 7600, confidence: "高" },
+      { name: "滨江", keys: ["滨江", "长河", "江陵路", "滨和", "浦沿", "滨江近地铁"], rent: 5200, low: 4200, high: 6600, confidence: "高" },
+      { name: "未来科技城", keys: ["未来科技城", "阿里巴巴", "阿里西溪", "西溪园区", "欧美金融城", "海创园"], rent: 4600, low: 3600, high: 5800, confidence: "高" },
+      { name: "城西", keys: ["城西", "古墩", "文新", "三墩", "莲花", "蒋村", "申花"], rent: 4300, low: 3400, high: 5600, confidence: "中" },
+      { name: "武林湖滨", keys: ["武林", "湖滨", "凤起路", "黄龙", "西湖文化广场"], rent: 5600, low: 4500, high: 7200, confidence: "中" },
+      { name: "良渚", keys: ["良渚文化村", "良渚", "勾庄", "杜甫村"], rent: 3600, low: 2800, high: 4600, confidence: "中" },
+      { name: "萧山奥体", keys: ["萧山", "钱江世纪城", "奥体", "建设一路"], rent: 3900, low: 3000, high: 5200, confidence: "中" },
+      { name: "城东东站", keys: ["城东", "九堡", "彭埠", "火车东站", "杭州东站"], rent: 4100, low: 3200, high: 5300, confidence: "中" },
+      { name: "下沙", keys: ["下沙", "金沙湖", "高教园", "文泽路"], rent: 3100, low: 2400, high: 4200, confidence: "中" },
+      { name: "临平", keys: ["临平新城", "临平", "乔司", "翁梅", "南苑"], rent: 2900, low: 2200, high: 3900, confidence: "中" },
+      { name: "富阳", keys: ["富阳", "银湖"], rent: 2400, low: 1800, high: 3300, confidence: "低" },
+      { name: "青山湖临安", keys: ["青山湖", "临安"], rent: 2300, low: 1700, high: 3200, confidence: "低" }
+    ];
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function readNumber(id, fallback = 0) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function readText(id, fallback = "") {
+      const value = document.getElementById(id).value.trim();
+      return value || fallback;
+    }
+
+    function moneyAbs(value) {
+      return Math.round(Math.abs(value)).toLocaleString("zh-CN");
+    }
+
+    function moneySigned(value, positiveWord = "省", negativeWord = "多花") {
+      if (Math.abs(value) < 1) return "基本持平";
+      return value > 0 ? `${positiveWord}${moneyAbs(value)}元` : `${negativeWord}${moneyAbs(value)}元`;
+    }
+
+    function resultClass(value, positiveGood = true) {
+      if (Math.abs(value) < 1) return "orange";
+      if (positiveGood) return value > 0 ? "green" : "red";
+      return value > 0 ? "red" : "green";
+    }
+
+    function hoursText(value) {
+      const abs = Math.abs(value).toLocaleString("zh-CN", {
+        minimumFractionDigits: Math.abs(value) % 1 === 0 ? 0 : 1,
+        maximumFractionDigits: 1
+      });
+      if (Math.abs(value) < 0.1) return "基本持平";
+      return value > 0 ? `+${abs}小时` : `-${abs}小时`;
+    }
+
+    function showStep(step) {
+      currentStep = step;
+      document.querySelectorAll(".step").forEach((el) => {
+        el.classList.toggle("hidden", Number(el.dataset.step) !== step);
+      });
+      document.getElementById("progressBar").style.width = `${step * 20}%`;
+      if (step === 2) autofillCommuteTimes();
+      if (step === 3) {
+        autofillRentReferences();
+        autofillTrafficCosts();
+      }
+      if (step === 4) autofillTimeValue();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1500);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function setPoiTip(text, type = "") {
+      const tip = document.getElementById("poiTip");
+      if (!tip) return;
+      const prefix = type === "ok" ? "已选择：" : type === "warn" ? "地址联想：" : "地址联想：";
+      tip.innerHTML = `<strong>${prefix}</strong>${escapeHtml(text)}`;
+    }
+
+    function disableNativeAddressMemory() {
+      ["workPlace", "currentHome", "targetHome"].forEach((id, index) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        const applyAttrs = () => {
+          input.setAttribute("autocomplete", "off");
+          input.setAttribute("autocorrect", "off");
+          input.setAttribute("autocapitalize", "none");
+          input.setAttribute("spellcheck", "false");
+          input.setAttribute("data-lpignore", "true");
+          input.setAttribute("data-1p-ignore", "");
+          input.setAttribute("name", `commute_query_${index + 1}`);
+        };
+        applyAttrs();
+        input.addEventListener("focus", applyAttrs);
+      });
+    }
+
+    function monthlyHours(oneWayMinutes, days) {
+      return oneWayMinutes * 2 * days * 4.33 / 60;
+    }
+
+    function normalizeKeyword(value) {
+      return String(value || "").replace(/\s+/g, "").toLowerCase();
+    }
+
+    function findRentReference(placeText) {
+      const normalized = normalizeKeyword(placeText);
+      const exact = rentReferenceProfiles.find((profile) => (
+        profile.keys.some((keyword) => normalized.includes(normalizeKeyword(keyword)))
+      ));
+
+      if (exact) {
+        return {
+          ...exact,
+          matched: true
+        };
+      }
+
+      return {
+        name: "杭州主城区参考",
+        rent: 3800,
+        low: 2800,
+        high: 5200,
+        confidence: "低",
+        matched: false
+      };
+    }
+
+    function rentReferenceText(label, reference, value, touched) {
+      const prefix = touched ? `${label}已手动设为${moneyAbs(value)}元` : `${label}${reference.name}约${moneyAbs(reference.rent)}元/月`;
+      const source = reference.matched ? "公开挂牌参考" : "未识别具体板块，使用杭州粗略参考";
+      return `${prefix}（${source}，常见区间${moneyAbs(reference.low)}-${moneyAbs(reference.high)}元，置信度${reference.confidence}）`;
+    }
+
+    function autofillRentReferences(options = {}) {
+      const force = options.force === true;
+      const currentHome = readText("currentHome", "");
+      const targetHome = readText("targetHome", "");
+      const currentReference = findRentReference(currentHome);
+      const targetReference = findRentReference(targetHome);
+      const currentInput = document.getElementById("currentRent");
+      const targetInput = document.getElementById("targetRent");
+
+      if (force || !rentTouched.current) {
+        currentInput.value = currentReference.rent;
+        rentTouched.current = false;
+      }
+      if (force || !rentTouched.target) {
+        targetInput.value = targetReference.rent;
+        rentTouched.target = false;
+      }
+
+      const note = document.getElementById("rentAutoNote");
+      note.innerHTML = `<strong>租金参考：</strong>${rentReferenceText("当前", currentReference, currentInput.value, rentTouched.current)}；${rentReferenceText("候选", targetReference, targetInput.value, rentTouched.target)}。可直接修改。`;
+    }
+
+    function monthlyCommuteDays() {
+      return state.days * 4.33;
+    }
+
+    function effectiveTrafficCostMode() {
+      if (state.trafficCostMode === "公共交通" || state.trafficCostMode === "自驾" || state.trafficCostMode === "低成本") {
+        return state.trafficCostMode;
+      }
+      if (state.mode === "自驾") return "自驾";
+      if (state.mode === "骑行/电动车" || state.mode === "步行") return "低成本";
+      return "公共交通";
+    }
+
+    function transitFareByMinutes(minutes) {
+      if (minutes <= 35) return 4;
+      if (minutes <= 55) return 5;
+      if (minutes <= 75) return 6;
+      if (minutes <= 95) return 8;
+      return 10;
+    }
+
+    function estimateDistanceKm(route, minutes, model) {
+      if (route?.distanceKm) return route.distanceKm;
+      if (model === "自驾") return Math.max(2, minutes * 0.55);
+      return Math.max(1, minutes * 0.42);
+    }
+
+    function estimateMonthlyTrafficCost(minutes, route, model) {
+      const safeMinutes = Math.max(1, Number(minutes) || 1);
+      const days = monthlyCommuteDays();
+
+      if (model === "公共交通") {
+        return Math.round(transitFareByMinutes(safeMinutes) * 2 * days);
+      }
+
+      if (model === "自驾") {
+        const distanceKm = estimateDistanceKm(route, safeMinutes, model);
+        const roadCost = distanceKm * 2 * days * 1;
+        const parkingCost = days * 20;
+        return Math.round((roadCost + parkingCost) / 10) * 10;
+      }
+
+      return state.mode === "骑行/电动车" ? 60 : 0;
+    }
+
+    function trafficCostNoteText(model, currentCost, targetCost) {
+      const manual = [trafficTouched.current ? "当前已手动修改" : "", trafficTouched.target ? "候选已手动修改" : ""].filter(Boolean).join("，");
+      const suffix = manual ? `；${manual}` : "";
+      if (model === "自驾") {
+        return `当前约${moneyAbs(currentCost)}元/月，候选约${moneyAbs(targetCost)}元/月。自驾按约1元/公里 + 20元/通勤日停车费估算${suffix}。`;
+      }
+      if (model === "公共交通") {
+        return `当前约${moneyAbs(currentCost)}元/月，候选约${moneyAbs(targetCost)}元/月。公共交通按单程4-10元、每周${state.days}天通勤估算${suffix}。`;
+      }
+      return `当前约${moneyAbs(currentCost)}元/月，候选约${moneyAbs(targetCost)}元/月。骑行/步行按低成本估算，电动车预留约60元/月充电维护${suffix}。`;
+    }
+
+    function autofillTrafficCosts(options = {}) {
+      const force = options.force === true;
+      const currentTime = Math.max(0, readNumber("currentTime", 0));
+      const targetTime = Math.max(0, readNumber("targetTime", 0));
+      const currentInput = document.getElementById("currentTraffic");
+      const targetInput = document.getElementById("targetTraffic");
+      const note = document.getElementById("trafficAutoNote");
+
+      if (!currentTime || !targetTime) {
+        if (note) note.innerHTML = "<strong>交通成本：</strong>先获取或填写通勤时间后，再自动估算交通成本。";
+        return;
+      }
+
+      const model = effectiveTrafficCostMode();
+      const currentCost = estimateMonthlyTrafficCost(currentTime, routeState.lastRoutes.current, model);
+      const targetCost = estimateMonthlyTrafficCost(targetTime, routeState.lastRoutes.target, model);
+
+      if (force || !trafficTouched.current) {
+        currentInput.value = currentCost;
+        trafficTouched.current = false;
+      }
+      if (force || !trafficTouched.target) {
+        targetInput.value = targetCost;
+        trafficTouched.target = false;
+      }
+
+      if (note) note.innerHTML = `<strong>交通成本：</strong>${trafficCostNoteText(model, currentInput.value, targetInput.value)}`;
+    }
+
+    function calculateHourlyTimeValue(monthlySalary) {
+      const salary = Math.max(0, Number(monthlySalary) || 0);
+      if (!salary) return 0;
+      return Math.max(1, Math.round(salary / 22 / 8));
+    }
+
+    function autofillTimeValue(options = {}) {
+      const force = options.force === true;
+      const salary = readNumber("monthlySalary", 0);
+      const hourlyValue = calculateHourlyTimeValue(salary);
+      const input = document.getElementById("timeValue");
+      const note = document.getElementById("timeValueAutoNote");
+
+      if (!hourlyValue) {
+        if (note) note.innerHTML = "<strong>时间价值：</strong>填写月工资后，会按月工资 ÷ 22个工作日 ÷ 8小时自动估算。";
+        return;
+      }
+
+      if (force || !timeValueTouched) {
+        input.value = hourlyValue;
+        timeValueTouched = false;
+      }
+
+      if (note) {
+        const suffix = timeValueTouched ? `，当前已手动设为${moneyAbs(input.value)}元/小时` : "";
+        note.innerHTML = `<strong>时间价值：</strong>按${moneyAbs(salary)}元/月 ÷ 22天 ÷ 8小时，估算约${moneyAbs(hourlyValue)}元/小时${suffix}。`;
+      }
+    }
+
+    function getAmapConfig() {
+      return AMAP_CONFIG;
+    }
+
+    function setRouteStatus(text, type = "") {
+      const el = document.getElementById("routeStatus");
+      if (!el) return;
+      el.textContent = text;
+      el.className = `route-status ${type}`.trim();
+    }
+
+    function updateRouteNote(currentRoute, targetRoute) {
+      const note = document.getElementById("timeAutoNote");
+      if (!note) return;
+
+      const currentValue = document.getElementById("currentTime").value;
+      const targetValue = document.getElementById("targetTime").value;
+      const currentText = currentRoute.ok
+        ? (timeTouched.current ? `当前已手动设为 ${currentValue} 分钟（地图查询 ${currentRoute.minutes} 分钟）` : `当前地图查询 ${currentRoute.minutes} 分钟`)
+        : `当前路线未获取：${currentRoute.message}`;
+      const targetText = targetRoute.ok
+        ? (timeTouched.target ? `候选已手动设为 ${targetValue} 分钟（地图查询 ${targetRoute.minutes} 分钟）` : `候选地图查询 ${targetRoute.minutes} 分钟`)
+        : `候选路线未获取：${targetRoute.message}`;
+      note.innerHTML = `<strong>地图路线：</strong>${currentText}；${targetText}。输入框可直接修改。`;
+    }
+
+    function loadAmapLoaderScript() {
+      if (window.AMapLoader) return Promise.resolve();
+      if (routeState.loaderPromise) return routeState.loaderPromise;
+
+      routeState.loaderPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://webapi.amap.com/loader.js";
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("高德 Loader 加载失败"));
+        document.head.appendChild(script);
+      });
+
+      return routeState.loaderPromise;
+    }
+
+    async function ensureAmap() {
+      const config = getAmapConfig();
+      if (!config.key) {
+        throw new Error("请先填写高德 JS API Key");
+      }
+      window._AMapSecurityConfig = {
+        securityJsCode: config.securityJsCode
+      };
+
+      if (routeState.amap && routeState.loadedKey === config.key) {
+        return routeState.amap;
+      }
+
+      await loadAmapLoaderScript();
+      routeState.amapPromise = window.AMapLoader.load({
+        key: config.key,
+        version: "2.0",
+        plugins: ["AMap.AutoComplete", "AMap.PlaceSearch", "AMap.Driving", "AMap.Transfer", "AMap.Walking", "AMap.Riding"]
+      });
+
+      routeState.amap = await routeState.amapPromise;
+      routeState.loadedKey = config.key;
+      return routeState.amap;
+    }
+
+    function routePoints(origin, destination) {
+      return [
+        { keyword: origin, city: "杭州" },
+        { keyword: destination, city: "杭州" }
+      ];
+    }
+
+    function routeServiceForMode(AMap) {
+      if (state.mode === "自驾") {
+        return new AMap.Driving({
+          policy: AMap.DrivingPolicy?.LEAST_TIME ?? 0
+        });
+      }
+      if (state.mode === "骑行/电动车") {
+        return new AMap.Riding();
+      }
+      if (state.mode === "步行") {
+        return new AMap.Walking();
+      }
+      return new AMap.Transfer({
+        city: "杭州市",
+        cityd: "杭州市",
+        policy: AMap.TransferPolicy?.LEAST_TIME ?? 0
+      });
+    }
+
+    function formatPoiValue(poi) {
+      if (!poi) return "";
+      return String(poi.name || "").trim();
+    }
+
+    function bindPoiSelect(auto, inputId, label) {
+      const handler = (event) => {
+        const poi = event?.poi || event;
+        const value = formatPoiValue(poi);
+        if (!value) return;
+        const input = document.getElementById(inputId);
+        input.value = value;
+        window.setTimeout(() => {
+          input.value = value;
+        }, 0);
+        timeTouched.current = false;
+        timeTouched.target = false;
+        rentTouched.current = false;
+        rentTouched.target = false;
+        setPoiTip(`${label}已填入 ${value}`, "ok");
+
+        if (currentStep === 2) autofillCommuteTimes({ force: true });
+        if (currentStep === 3) {
+          autofillRentReferences({ force: true });
+          autofillTrafficCosts({ force: true });
+        }
+      };
+
+      if (typeof auto.on === "function") {
+        auto.on("select", handler);
+      } else if (window.AMap?.Event?.addListener) {
+        window.AMap.Event.addListener(auto, "select", handler);
+      }
+    }
+
+    async function initPoiAutocomplete() {
+      if (routeState.autocompleteReady) return;
+      try {
+        const AMap = await ensureAmap();
+        const AutoComplete = AMap.AutoComplete || AMap.Autocomplete;
+        if (!AutoComplete) {
+          setPoiTip("地图输入提示插件加载失败，可继续手动输入。", "warn");
+          return;
+        }
+
+        [
+          ["workPlace", "工作地点"],
+          ["currentHome", "当前居住地"],
+          ["targetHome", "候选居住地"]
+        ].forEach(([input, label]) => {
+          const auto = new AutoComplete({
+            city: "杭州",
+            citylimit: true,
+            input
+          });
+          bindPoiSelect(auto, input, label);
+        });
+
+        routeState.autocompleteReady = true;
+        setPoiTip("输入几个字后选择高德 POI，可减少手动输入。");
+      } catch (error) {
+        setPoiTip(`地图联想暂不可用：${error.message || "加载失败"}。可继续手动输入。`, "warn");
+      }
+    }
+
+    function findDurationSeconds(result) {
+      const directCandidates = [
+        result?.routes?.[0]?.time,
+        result?.plans?.[0]?.time,
+        result?.plan?.time,
+        result?.route?.paths?.[0]?.duration,
+        result?.route?.transits?.[0]?.duration
+      ].map(Number).filter((value) => Number.isFinite(value) && value >= 60);
+
+      if (directCandidates.length) {
+        return directCandidates[0];
+      }
+
+      const candidates = [];
+      const visit = (value, key = "") => {
+        if (value == null) return;
+        if (typeof value === "number" && /time|duration/i.test(key) && value > 0) {
+          candidates.push(value);
+          return;
+        }
+        if (Array.isArray(value)) {
+          value.forEach((item) => visit(item, key));
+          return;
+        }
+        if (typeof value === "object") {
+          Object.entries(value).forEach(([childKey, childValue]) => visit(childValue, childKey));
+        }
+      };
+      visit(result);
+      const sane = candidates.filter((value) => value >= 60 && value <= 86400);
+      if (!sane.length) return null;
+      return Math.max(...sane);
+    }
+
+    function findDistanceMeters(result) {
+      const directCandidates = [
+        result?.routes?.[0]?.distance,
+        result?.plans?.[0]?.distance,
+        result?.plan?.distance,
+        result?.route?.paths?.[0]?.distance,
+        result?.route?.transits?.[0]?.distance
+      ].map(Number).filter((value) => Number.isFinite(value) && value >= 100);
+
+      if (directCandidates.length) {
+        return directCandidates[0];
+      }
+
+      const candidates = [];
+      const visit = (value, key = "") => {
+        if (value == null) return;
+        if (typeof value === "number" && /distance/i.test(key) && value >= 100) {
+          candidates.push(value);
+          return;
+        }
+        if (Array.isArray(value)) {
+          value.forEach((item) => visit(item, key));
+          return;
+        }
+        if (typeof value === "object") {
+          Object.entries(value).forEach(([childKey, childValue]) => visit(childValue, childKey));
+        }
+      };
+      visit(result);
+      const sane = candidates.filter((value) => value >= 100 && value <= 200000);
+      if (!sane.length) return null;
+      return Math.max(...sane);
+    }
+
+    function searchRoute(service, points) {
+      return new Promise((resolve, reject) => {
+        service.search(points, (status, result) => {
+          if (status === "complete") {
+            const seconds = findDurationSeconds(result);
+            if (!seconds) {
+              reject(new Error("地图返回结果里没有耗时字段"));
+              return;
+            }
+            const distanceMeters = findDistanceMeters(result);
+            resolve({
+              minutes: Math.max(1, Math.round(seconds / 60)),
+              distanceKm: distanceMeters ? Math.round(distanceMeters / 100) / 10 : null
+            });
+            return;
+          }
+
+          const message = typeof result === "string" ? result : (result?.info || result?.message || status);
+          reject(new Error(message));
+        });
+      });
+    }
+
+    async function fetchRouteMinutes(origin, destination) {
+      const AMap = await ensureAmap();
+      const service = routeServiceForMode(AMap);
+      const route = await searchRoute(service, routePoints(origin, destination));
+      return {
+        ok: true,
+        minutes: route.minutes,
+        distanceKm: route.distanceKm,
+        message: "complete"
+      };
+    }
+
+    async function resolveRoute(origin, destination) {
+      try {
+        return await fetchRouteMinutes(origin, destination);
+      } catch (error) {
+        return {
+          ok: false,
+          minutes: null,
+          message: error.message || "查询失败"
+        };
+      }
+    }
+
+    async function autofillCommuteTimes(options = {}) {
+      const force = options.force === true;
+      const workPlace = readText("workPlace", "");
+      const currentHome = readText("currentHome", "");
+      const targetHome = readText("targetHome", "");
+      const currentInput = document.getElementById("currentTime");
+      const targetInput = document.getElementById("targetTime");
+
+      if (!workPlace || !currentHome || !targetHome) {
+        setRouteStatus("请先填写工作地、当前居住地和候选居住地。", "warn");
+        return;
+      }
+
+      if (!getAmapConfig().key) {
+        document.getElementById("timeAutoNote").innerHTML = "<strong>等待地图查询：</strong>地图服务暂未配置，也可以直接手动填写时间。";
+        setRouteStatus("地图服务暂未配置，无法获取真实路线耗时。", "warn");
+        return;
+      }
+
+      if (routeState.isResolving) return;
+      routeState.isResolving = true;
+      document.getElementById("routeRefreshBtn").disabled = true;
+      setRouteStatus("正在调用地图路线规划，请稍等...", "");
+
+      const [currentRoute, targetRoute] = await Promise.all([
+        resolveRoute(currentHome, workPlace),
+        resolveRoute(targetHome, workPlace)
+      ]);
+      routeState.lastRoutes.current = currentRoute.ok ? currentRoute : null;
+      routeState.lastRoutes.target = targetRoute.ok ? targetRoute : null;
+
+      if (currentRoute.ok && (force || !timeTouched.current)) {
+        currentInput.value = currentRoute.minutes;
+        if (force) timeTouched.current = false;
+      }
+      if (targetRoute.ok && (force || !timeTouched.target)) {
+        targetInput.value = targetRoute.minutes;
+        if (force) timeTouched.target = false;
+      }
+
+      updateRouteNote(currentRoute, targetRoute);
+
+      if (currentRoute.ok && targetRoute.ok) {
+        setRouteStatus("已使用地图路线规划填充，可继续修改。", "success");
+      } else {
+        setRouteStatus("部分路线未获取到，请检查 Key、地点名称或手动填写。", "warn");
+      }
+
+      routeState.isResolving = false;
+      document.getElementById("routeRefreshBtn").disabled = false;
+      autofillTrafficCosts();
+    }
+
+    function hasPriority(name) {
+      return state.priorities.includes(name);
+    }
+
+    function calculate() {
+      const workPlace = readText("workPlace", "工作地");
+      const currentHome = readText("currentHome", "当前居住地");
+      const targetHome = readText("targetHome", "候选居住地");
+      const currentTime = Math.max(0, readNumber("currentTime", 0));
+      const targetTime = Math.max(0, readNumber("targetTime", 0));
+      const currentRent = Math.max(0, readNumber("currentRent", 4000));
+      const targetRent = Math.max(0, readNumber("targetRent", 2800));
+      const currentTraffic = Math.max(0, readNumber("currentTraffic", 250));
+      const targetTraffic = Math.max(0, readNumber("targetTraffic", 500));
+      const extraCost = Math.max(0, readNumber("extraCost", 0));
+      const movingCost = Math.max(0, readNumber("movingCost", 0));
+      const timeValue = Math.max(0, readNumber("timeValue", 50));
+      const days = Number(state.days) || 5;
+      const limit = Number(state.limit) || 60;
+
+      const currentHousing = currentRent;
+      const targetHousing = targetRent + movingCost;
+      const housingGain = currentHousing - targetHousing;
+      const trafficChange = targetTraffic + extraCost - currentTraffic;
+      const cashGain = housingGain - trafficChange;
+
+      const currentHours = monthlyHours(currentTime, days);
+      const targetHours = monthlyHours(targetTime, days);
+      const moreHours = targetHours - currentHours;
+      const timeCost = moreHours * timeValue;
+      const netGain = cashGain - timeCost;
+      const visibleTotalCurrent = currentHousing + currentTraffic;
+      const visibleTotalTarget = targetHousing + targetTraffic + extraCost + Math.max(0, timeCost);
+
+      let risk = 24;
+      if (targetTime > limit) risk += clamp((targetTime - limit) / 45 * 24, 0, 24);
+      if (targetTime >= 75) risk += 12;
+      if (moreHours > 0) risk += clamp(moreHours / 30 * 24, 0, 24);
+      if (trafficChange > 300) risk += 6;
+      if (netGain < 0) risk += clamp(Math.abs(netGain) / 2000 * 22, 0, 22);
+      if (state.overtime === "经常" && moreHours > 0) risk += 10;
+      if (state.tolerance === "低" && moreHours > 0) risk += 9;
+      if (state.tolerance === "高") risk -= 8;
+      if (hasPriority("通勤时间") && moreHours > 0) risk += 10;
+      if (hasPriority("居住成本") && cashGain > 800) risk -= 7;
+      if (hasPriority("生活便利") && targetTime > currentTime) risk += 5;
+      if (state.housingType === "有房贷" && netGain < 400) risk += 5;
+      if (moreHours < 0) risk -= 12;
+      if (netGain > 900) risk -= 8;
+      risk = Math.round(clamp(risk, 0, 100));
+
+      const quality = {
+        通勤时间: Math.round(clamp(targetTime / Math.max(limit, 30) * 68 + Math.max(0, moreHours) / 30 * 22, 12, 100)),
+        换乘稳定: Math.round(clamp((["自驾", "混合通勤"].includes(state.mode) ? 58 : 34) + (targetTime > 60 ? 18 : 0) + (state.overtime === "经常" ? 10 : 0), 10, 100)),
+        预算压力: Math.round(clamp(cashGain < 0 ? 62 + Math.abs(cashGain) / 35 : 42 - cashGain / 80, 8, 100)),
+        睡眠影响: Math.round(clamp(moreHours > 0 ? 42 + moreHours / 1.1 : 22, 8, 100)),
+        生活时间: Math.round(clamp(moreHours > 0 ? 45 + moreHours / 1.2 : 18, 8, 100))
+      };
+
+      return {
+        workPlace,
+        currentHome,
+        targetHome,
+        currentTime,
+        targetTime,
+        currentRent,
+        targetRent,
+        currentTraffic,
+        targetTraffic,
+        extraCost,
+        movingCost,
+        timeValue,
+        days,
+        limit,
+        currentHours,
+        targetHours,
+        moreHours,
+        timeCost,
+        housingGain,
+        trafficChange,
+        cashGain,
+        netGain,
+        visibleTotalCurrent,
+        visibleTotalTarget,
+        risk,
+        quality
+      };
+    }
+
+    function getVerdict(result) {
+      if (result.netGain >= 900 && result.risk < 62) {
+        return {
+          label: "值得继续看",
+          line: `住到${result.targetHome}，算完时间账后仍然有净收益。`,
+          desc: `估算下来，每月现金可省${moneyAbs(result.cashGain)}元，扣掉通勤时间折算后，综合仍可省约${moneyAbs(result.netGain)}元。`
+        };
+      }
+
+      if (result.netGain >= 0 && result.risk < 76) {
+        return {
+          label: "谨慎选择",
+          line: `${result.targetHome}不是不能选，但优势不够厚。`,
+          desc: `综合后大约净省${moneyAbs(result.netGain)}元/月；如果早晚高峰变长，或者加班变多，这点优势很容易被吃掉。`
+        };
+      }
+
+      if (result.cashGain > 0 && result.moreHours > 0) {
+        return {
+          label: "谨慎选择",
+          line: `住远一点能少花钱，但你会把省下的钱换成路上时间。`,
+          desc: `候选方案每月可少花${moneyAbs(result.cashGain)}元现金，但会多出${Math.abs(result.moreHours).toFixed(1)}小时通勤，折算后综合为净损失${moneyAbs(result.netGain)}元。`
+        };
+      }
+
+      if (result.moreHours < 0 && result.cashGain < 0) {
+        return {
+          label: "花钱买时间",
+          line: `${result.targetHome}不是省钱方案，但可能改善生活节奏。`,
+          desc: `候选方案每月现金多花${moneyAbs(result.cashGain)}元，但能少通勤${Math.abs(result.moreHours).toFixed(1)}小时，综合后${result.netGain >= 0 ? `净省${moneyAbs(result.netGain)}元` : `净损失${moneyAbs(result.netGain)}元`}。`
+        };
+      }
+
+      return {
+        label: "不建议长期选",
+        line: `${result.targetHome}这笔账不太划算。`,
+        desc: `现金、时间和生活质量没有同时变好，综合测算为净损失${moneyAbs(result.netGain)}元/月。`
+      };
+    }
+
+    function getScoreText(score) {
+      if (score < 36) {
+        return {
+          title: "低损耗",
+          desc: "候选方案对生活节奏影响较小，可以继续看房比较。",
+          color: "var(--green)"
+        };
+      }
+      if (score < 68) {
+        return {
+          title: "中等损耗",
+          desc: "候选方案可以接受，但建议先体验真实早晚高峰。",
+          color: "var(--orange)"
+        };
+      }
+      return {
+        title: "较高损耗",
+        desc: "候选方案会明显增加通勤压力，需要谨慎评估是否长期可持续。",
+        color: "var(--red)"
+      };
+    }
+
+    function getPeopleAdvice(result) {
+      const fit = [];
+      const unfit = [];
+
+      if (result.netGain > 700) fit.push("短期过渡，且预算压力比较大。");
+      if (result.days <= 4) fit.push("每周到公司天数较少，或可错峰通勤。");
+      if (result.moreHours <= 0) fit.push("候选方案不增加通勤，甚至能省时间。");
+      if (hasPriority("居住成本") && result.cashGain > 600) fit.push("更在意月度现金流，而不是生活半径。");
+      if (state.tolerance === "高" && result.risk < 70) fit.push("通勤忍耐度较高，能稳定执行路线。");
+      if (!fit.length) fit.push("房源本身有明显品质提升，且愿意为它付出成本。");
+
+      if (state.overtime === "经常" && result.moreHours > 0) unfit.push("高强度工作或经常加班。");
+      if (result.moreHours > 18) unfit.push(`每月多出${result.moreHours.toFixed(1)}小时通勤，容易压缩睡眠和运动。`);
+      if (result.targetTime > result.limit) unfit.push(`心理上接受不了单程超过${result.limit}分钟。`);
+      if (result.netGain < 0) unfit.push(`把时间算进去后，每月反而净损失${moneyAbs(result.netGain)}元。`);
+      if (hasPriority("生活便利") && result.targetTime > result.currentTime) unfit.push("很看重下班后的生活半径和自由时间。");
+      if (!unfit.length) unfit.push("对房租节省不敏感，或者更看重市区便利。");
+
+      return {
+        fit: fit.slice(0, 4),
+        unfit: unfit.slice(0, 4)
+      };
+    }
+
+    function finalAdvice(result, verdict) {
+      if (result.netGain >= 900 && result.risk < 62) {
+        return `综合来看，${result.targetHome}可以进入认真看房列表。但不要马上定，建议工作日早晚高峰各试一次通勤，确认单程真的接近${result.targetTime}分钟。`;
+      }
+
+      if (result.netGain >= 0) {
+        return `可以把${result.targetHome}作为备选，但不要长期绑定。建议优先寻找单程${Math.min(result.limit, 60)}分钟以内的同价位房源，或者把候选房租再压低${Math.max(200, Math.round((800 - result.netGain) / 100) * 100)}元/月。`;
+      }
+
+      if (result.cashGain > 0 && result.moreHours > 0) {
+        return `不建议只因为便宜就搬到${result.targetHome}。这笔账的核心不是房租少了，而是每月多出${result.moreHours.toFixed(1)}小时在路上。除非现金压力很紧，否则建议继续找更近的过渡方案。`;
+      }
+
+      if (result.moreHours < 0 && result.cashGain < 0) {
+        return `如果你当前最痛苦的是通勤，${result.targetHome}可以理解成花钱买时间；但它不是省钱方案，适合收入稳定、愿意为生活节奏付费的人。`;
+      }
+
+      return `${verdict.label}。建议重新设定候选范围：先把单程通勤控制在${Math.min(result.limit, 60)}分钟以内，再比较房租差。`;
+    }
+
+    function renderList(targetId, items, markClass, markText) {
+      document.getElementById(targetId).innerHTML = items.map((item) => (
+        `<li><span class="${markClass}">${markText}</span><span>${item}</span></li>`
+      )).join("");
+    }
+
+    function renderQualityList(quality) {
+      document.getElementById("qualityList").innerHTML = Object.entries(quality).map(([name, value]) => (
+        `<div class="quality-row"><span>${name}</span><div class="quality-bar"><span style="width:${value}%;"></span></div><strong>${value}</strong></div>`
+      )).join("");
+    }
+
+    function renderReport() {
+      const result = calculate();
+      const verdict = getVerdict(result);
+      const scoreText = getScoreText(result.risk);
+      const people = getPeopleAdvice(result);
+      const advice = finalAdvice(result, verdict);
+
+      document.getElementById("reportMeta").textContent = `工作地点：${result.workPlace}｜当前居住：${result.currentHome}｜候选居住：${result.targetHome}`;
+      document.getElementById("oneLine").textContent = verdict.line;
+      document.getElementById("oneLineDesc").textContent = verdict.desc;
+
+      const rentDiff = document.getElementById("rentDiff");
+      rentDiff.textContent = moneySigned(result.housingGain, "-", "+");
+      rentDiff.className = `value ${resultClass(result.housingGain, true)}`;
+
+      const timeDiff = document.getElementById("timeDiff");
+      timeDiff.textContent = hoursText(result.moreHours);
+      timeDiff.className = `value ${resultClass(result.moreHours, false)}`;
+
+      const trafficDiff = document.getElementById("trafficDiff");
+      trafficDiff.textContent = moneySigned(-result.trafficChange, "-", "+");
+      trafficDiff.className = `value ${resultClass(-result.trafficChange, true)}`;
+
+      const timeCost = document.getElementById("timeCost");
+      timeCost.textContent = moneySigned(-result.timeCost, "-", "+");
+      timeCost.className = `value ${resultClass(-result.timeCost, true)}`;
+      document.getElementById("timeCostNote").textContent = `按${moneyAbs(result.timeValue)}元/小时估算`;
+
+      document.getElementById("scoreNum").textContent = result.risk;
+      document.getElementById("scoreCircle").style.setProperty("--deg", `${result.risk * 3.6}deg`);
+      document.getElementById("scoreCircle").style.setProperty("--score-color", scoreText.color);
+      document.getElementById("scoreTitle").textContent = scoreText.title;
+      document.getElementById("scoreDesc").textContent = scoreText.desc;
+      renderQualityList(result.quality);
+
+      document.getElementById("compareBody").innerHTML = [
+        `<tr><td>居住成本</td><td>${result.currentRent.toLocaleString("zh-CN")}元</td><td>${(result.targetRent + result.movingCost).toLocaleString("zh-CN")}元</td><td class="${resultClass(result.housingGain, true)}">${moneySigned(result.housingGain, "-", "+")}</td></tr>`,
+        `<tr><td>交通成本</td><td>${result.currentTraffic.toLocaleString("zh-CN")}元</td><td>${(result.targetTraffic + result.extraCost).toLocaleString("zh-CN")}元</td><td class="${resultClass(-result.trafficChange, true)}">${moneySigned(-result.trafficChange, "-", "+")}</td></tr>`,
+        `<tr><td>通勤时间</td><td>${result.currentHours.toFixed(1)}小时</td><td>${result.targetHours.toFixed(1)}小时</td><td class="${resultClass(result.moreHours, false)}">${hoursText(result.moreHours)}</td></tr>`,
+        `<tr><td>时间折算</td><td colspan="2">${moneyAbs(result.timeValue)}元/小时 × 月度时间差</td><td class="${resultClass(-result.timeCost, true)}">${moneySigned(-result.timeCost, "-", "+")}</td></tr>`,
+        `<tr><td>总成本</td><td>${Math.round(result.visibleTotalCurrent).toLocaleString("zh-CN")}元</td><td>${Math.round(result.visibleTotalTarget).toLocaleString("zh-CN")}元</td><td class="${resultClass(result.netGain, true)}">${result.netGain >= 0 ? "净省" : "净亏"}${moneyAbs(result.netGain)}元</td></tr>`
+      ].join("");
+
+      renderList("fitList", people.fit, "ok", "✓");
+      renderList("unfitList", people.unfit, "no", "×");
+      document.getElementById("finalAdvice").textContent = advice;
+
+      lastReport.text = [
+        `杭州通勤成本测算：${verdict.label}`,
+        verdict.line,
+        verdict.desc,
+        `月度居住成本差：${moneySigned(result.housingGain, "-", "+")}`,
+        `月度通勤时间差：${hoursText(result.moreHours)}`,
+        `月度交通成本差：${moneySigned(-result.trafficChange, "-", "+")}`,
+        `时间折算成本：${moneySigned(-result.timeCost, "-", "+")}`,
+        `综合净结果：${result.netGain >= 0 ? "净省" : "净亏"}${moneyAbs(result.netGain)}元/月`,
+        `生活质量影响评分：${result.risk}/100`,
+        `最终建议：${advice}`
+      ].join("\n");
+
+      showStep(5);
+    }
+
+    function copyReport() {
+      if (!lastReport.text) renderReport();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastReport.text).then(() => showToast("结论已复制"));
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = lastReport.text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        showToast("结论已复制");
+      }
+    }
+
+    document.getElementById("currentTime").addEventListener("input", () => {
+      timeTouched.current = true;
+      autofillTrafficCosts();
+    });
+
+    document.getElementById("targetTime").addEventListener("input", () => {
+      timeTouched.target = true;
+      autofillTrafficCosts();
+    });
+
+    document.getElementById("currentRent").addEventListener("input", () => {
+      rentTouched.current = true;
+      autofillRentReferences();
+    });
+
+    document.getElementById("targetRent").addEventListener("input", () => {
+      rentTouched.target = true;
+      autofillRentReferences();
+    });
+
+    document.getElementById("routeRefreshBtn").addEventListener("click", () => {
+      timeTouched.current = false;
+      timeTouched.target = false;
+      autofillCommuteTimes({ force: true });
+    });
+
+    document.getElementById("rentRefreshBtn").addEventListener("click", () => {
+      rentTouched.current = false;
+      rentTouched.target = false;
+      autofillRentReferences({ force: true });
+    });
+
+    document.getElementById("currentTraffic").addEventListener("input", () => {
+      trafficTouched.current = true;
+      autofillTrafficCosts();
+    });
+
+    document.getElementById("targetTraffic").addEventListener("input", () => {
+      trafficTouched.target = true;
+      autofillTrafficCosts();
+    });
+
+    document.getElementById("monthlySalary").addEventListener("input", () => {
+      autofillTimeValue();
+    });
+
+    document.getElementById("timeValue").addEventListener("input", () => {
+      timeValueTouched = true;
+      autofillTimeValue();
+    });
+
+    ["workPlace", "currentHome", "targetHome"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", () => {
+        timeTouched.current = false;
+        timeTouched.target = false;
+        rentTouched.current = false;
+        rentTouched.target = false;
+        trafficTouched.current = false;
+        trafficTouched.target = false;
+        routeState.lastRoutes.current = null;
+        routeState.lastRoutes.target = null;
+      });
+    });
+
+    document.querySelectorAll(".chips").forEach((group) => {
+      group.addEventListener("click", (event) => {
+        const chip = event.target.closest(".chip");
+        if (!chip) return;
+        const name = group.dataset.name;
+        const value = chip.dataset.value;
+
+        if (group.dataset.multi === "true") {
+          chip.classList.toggle("active");
+          const selected = Array.from(group.querySelectorAll(".chip.active")).map((item) => item.dataset.value);
+          state[name] = selected.length ? selected : [value];
+          if (!selected.length) chip.classList.add("active");
+          return;
+        }
+
+        group.querySelectorAll(".chip").forEach((item) => item.classList.remove("active"));
+        chip.classList.add("active");
+        state[name] = Number.isNaN(Number(value)) ? value : Number(value);
+        if (name === "mode") {
+          trafficTouched.current = false;
+          trafficTouched.target = false;
+          if (currentStep === 2) autofillCommuteTimes();
+          if (currentStep >= 3) autofillTrafficCosts({ force: true });
+        }
+        if (name === "days" || name === "trafficCostMode") {
+          trafficTouched.current = false;
+          trafficTouched.target = false;
+          autofillTrafficCosts({ force: true });
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-next]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (currentStep < 5) showStep(currentStep + 1);
+      });
+    });
+
+    document.querySelectorAll("[data-prev]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (currentStep > 1) showStep(currentStep - 1);
+      });
+    });
+
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      if (readNumber("currentTime", 0) <= 0 || readNumber("targetTime", 0) <= 0) {
+        showStep(2);
+        showToast("请先获取或填写通勤时间");
+        return;
+      }
+      renderReport();
+    });
+    document.getElementById("restartBtn").addEventListener("click", () => showStep(1));
+    document.getElementById("copyBtn").addEventListener("click", copyReport);
+    disableNativeAddressMemory();
+    initPoiAutocomplete();
+  </script>
+</body>
+</html>
