@@ -324,6 +324,17 @@
       margin-top: 20px;
     }
 
+    .report-actions {
+      display: grid;
+      grid-template-columns: 0.95fr 0.95fr 1.1fr;
+    }
+
+    .report-actions button {
+      width: 100%;
+      min-width: 0;
+      font-size: 14px;
+    }
+
     button {
       height: 48px;
       border: none;
@@ -331,6 +342,11 @@
       font-size: 15px;
       font-weight: 900;
       cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.72;
     }
 
     .btn-primary {
@@ -1115,9 +1131,10 @@
 
         <p class="footer-note">注：本测算结果仅供参考，实际情况会受个人生活方式、工作安排、路线稳定性影响。</p>
 
-        <div class="actions">
+        <div class="actions report-actions">
           <button class="btn-secondary" type="button" id="restartBtn">重新测算</button>
-          <button class="btn-primary" type="button" id="copyBtn">复制结论</button>
+          <button class="btn-secondary" type="button" id="copyBtn">复制结论</button>
+          <button class="btn-primary" type="button" id="shareImageBtn">生成长图</button>
         </div>
       </section>
     </main>
@@ -1139,7 +1156,14 @@
     };
 
     const lastReport = {
-      text: ""
+      text: "",
+      share: null
+    };
+
+    const SHARE_WATERMARK = {
+      enabled: true,
+      text: "公众号：老田说",
+      opacity: 0.14
     };
 
     const AMAP_CONFIG = {
@@ -2053,8 +2077,395 @@
         `生活质量影响评分：${result.risk}/100`,
         `最终建议：${advice}`
       ].join("\n");
+      lastReport.share = {
+        result,
+        verdict,
+        scoreText,
+        people,
+        advice
+      };
 
       showStep(5);
+    }
+
+    function posterFont(weight, size) {
+      return `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif`;
+    }
+
+    function drawRoundRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle = "") {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fillStyle) {
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+      }
+      if (strokeStyle) {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    function trimCanvasText(ctx, text, maxWidth) {
+      let next = String(text || "");
+      while (next.length > 1 && ctx.measureText(`${next}...`).width > maxWidth) {
+        next = next.slice(0, -1);
+      }
+      return `${next}...`;
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth, maxLines = Infinity) {
+      const lines = [];
+      String(text || "").split(/\n/).forEach((paragraph) => {
+        let line = "";
+        Array.from(paragraph).forEach((char) => {
+          const testLine = line + char;
+          if (line && ctx.measureText(testLine).width > maxWidth) {
+            lines.push(line);
+            line = char;
+          } else {
+            line = testLine;
+          }
+        });
+        if (line) lines.push(line);
+        if (!paragraph) lines.push("");
+      });
+
+      if (lines.length <= maxLines) return lines;
+      const next = lines.slice(0, maxLines);
+      next[next.length - 1] = trimCanvasText(ctx, next[next.length - 1], maxWidth);
+      return next;
+    }
+
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
+      const lines = wrapCanvasText(ctx, text, maxWidth, maxLines);
+      lines.forEach((line, index) => {
+        ctx.fillText(line, x, y + index * lineHeight);
+      });
+      return y + lines.length * lineHeight;
+    }
+
+    function scorePosterColor(score) {
+      if (score < 36) return "#12a150";
+      if (score < 68) return "#ff8a00";
+      return "#e5484d";
+    }
+
+    function posterMoneyText(value) {
+      if (Math.abs(value) < 1) return "基本持平";
+      return value > 0 ? `省${moneyAbs(value)}元` : `多花${moneyAbs(value)}元`;
+    }
+
+    function posterTimeCostText(value) {
+      if (Math.abs(value) < 1) return "基本持平";
+      return value > 0 ? `多花${moneyAbs(value)}元` : `省${moneyAbs(value)}元`;
+    }
+
+    function drawPosterMetric(ctx, metric) {
+      drawRoundRect(ctx, metric.x, metric.y, metric.width, metric.height, 24, "#ffffff", "#e6ebf2");
+      ctx.fillStyle = "#6b7280";
+      ctx.font = posterFont(800, 25);
+      ctx.fillText(metric.label, metric.x + 28, metric.y + 46);
+      ctx.fillStyle = metric.color;
+      ctx.font = posterFont(950, 43);
+      drawWrappedText(ctx, metric.value, metric.x + 28, metric.y + 101, metric.width - 56, 48, 2);
+      ctx.fillStyle = "#7a8699";
+      ctx.font = posterFont(500, 22);
+      drawWrappedText(ctx, metric.note, metric.x + 28, metric.y + 154, metric.width - 56, 28, 2);
+    }
+
+    function drawPosterList(ctx, title, items, x, y, maxWidth, color) {
+      ctx.fillStyle = "#172033";
+      ctx.font = posterFont(900, 30);
+      ctx.fillText(title, x, y);
+      ctx.font = posterFont(500, 25);
+      ctx.fillStyle = "#374151";
+      let nextY = y + 42;
+      items.slice(0, 2).forEach((item) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x + 12, nextY - 9, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#374151";
+        nextY = drawWrappedText(ctx, item, x + 34, nextY, maxWidth - 34, 31, 2) + 10;
+      });
+      return nextY;
+    }
+
+    function drawPosterWatermark(ctx, width, height) {
+      if (!SHARE_WATERMARK.enabled) return;
+      ctx.save();
+      ctx.globalAlpha = SHARE_WATERMARK.opacity;
+      ctx.fillStyle = "#1f6fff";
+      ctx.font = posterFont(900, 38);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.translate(width / 2, height / 2);
+      ctx.rotate(-Math.PI / 5.8);
+
+      const tileX = 330;
+      const tileY = 220;
+      let row = 0;
+      for (let y = -height * 1.15; y <= height * 1.15; y += tileY) {
+        const offsetX = row % 2 ? tileX / 2 : 0;
+        for (let x = -width * 1.2; x <= width * 1.2; x += tileX) {
+          ctx.fillText(SHARE_WATERMARK.text, x + offsetX, y);
+        }
+        row += 1;
+      }
+
+      ctx.restore();
+    }
+
+    function buildSharePoster(payload) {
+      const { result, verdict, scoreText, people, advice } = payload;
+      const width = 1080;
+      const draftHeight = 2200;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = draftHeight;
+      const ctx = canvas.getContext("2d");
+      const pad = 64;
+      const contentWidth = width - pad * 2;
+
+      const bg = ctx.createLinearGradient(0, 0, 0, draftHeight);
+      bg.addColorStop(0, "#ffffff");
+      bg.addColorStop(0.22, "#f3f7ff");
+      bg.addColorStop(1, "#f5f7fb");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, draftHeight);
+
+      let y = 78;
+      ctx.fillStyle = "#172033";
+      ctx.font = posterFont(950, 54);
+      ctx.fillText("杭州通勤成本测算", pad, y);
+
+      const tagText = SHARE_WATERMARK.text;
+      ctx.font = posterFont(900, 26);
+      const tagWidth = ctx.measureText(tagText).width + 42;
+      drawRoundRect(ctx, width - pad - tagWidth, y - 43, tagWidth, 48, 24, "#eaf2ff", "");
+      ctx.fillStyle = "#1f6fff";
+      ctx.fillText(tagText, width - pad - tagWidth + 21, y - 11);
+
+      y += 52;
+      ctx.fillStyle = "#6b7280";
+      ctx.font = posterFont(500, 27);
+      ctx.fillText("住远一点，到底是不是真的省钱？", pad, y);
+      y += 52;
+
+      ctx.fillStyle = "#7a8699";
+      ctx.font = posterFont(500, 22);
+      drawWrappedText(ctx, `工作：${result.workPlace}｜当前：${result.currentHome}｜候选：${result.targetHome}`, pad, y, contentWidth, 30, 2);
+      y += 78;
+
+      drawRoundRect(ctx, pad, y, contentWidth, 278, 28, "#f0fff7", "#bfe7d4");
+      ctx.fillStyle = "#12a150";
+      ctx.font = posterFont(950, 30);
+      ctx.fillText(verdict.label, pad + 34, y + 52);
+      ctx.fillStyle = "#172033";
+      ctx.font = posterFont(950, 39);
+      const lineEnd = drawWrappedText(ctx, verdict.line, pad + 34, y + 108, contentWidth - 68, 48, 3);
+      ctx.fillStyle = "#374151";
+      ctx.font = posterFont(500, 27);
+      drawWrappedText(ctx, verdict.desc, pad + 34, lineEnd + 22, contentWidth - 68, 38, 3);
+      y += 318;
+
+      const gap = 24;
+      const metricWidth = (contentWidth - gap) / 2;
+      const metricHeight = 205;
+      const metrics = [
+        {
+          label: "现金账",
+          value: posterMoneyText(result.cashGain),
+          note: "房租 + 交通成本",
+          color: result.cashGain >= 0 ? "#12a150" : "#e5484d"
+        },
+        {
+          label: "通勤时间",
+          value: hoursText(result.moreHours),
+          note: "每月路上时间差",
+          color: result.moreHours <= 0 ? "#12a150" : "#e5484d"
+        },
+        {
+          label: "时间折算",
+          value: posterTimeCostText(result.timeCost),
+          note: `按${moneyAbs(result.timeValue)}元/小时`,
+          color: result.timeCost <= 0 ? "#12a150" : "#e5484d"
+        },
+        {
+          label: "综合结果",
+          value: `${result.netGain >= 0 ? "净省" : "净亏"}${moneyAbs(result.netGain)}元`,
+          note: "现金账扣除时间账",
+          color: result.netGain >= 0 ? "#12a150" : "#e5484d"
+        }
+      ];
+      metrics.forEach((metric, index) => {
+        drawPosterMetric(ctx, {
+          ...metric,
+          x: pad + (index % 2) * (metricWidth + gap),
+          y: y + Math.floor(index / 2) * (metricHeight + gap),
+          width: metricWidth,
+          height: metricHeight
+        });
+      });
+      y += metricHeight * 2 + gap + 44;
+
+      drawRoundRect(ctx, pad, y, contentWidth, 210, 28, "#fff7ed", "#fed7aa");
+      const scoreColor = scorePosterColor(result.risk);
+      const cx = pad + 98;
+      const cy = y + 105;
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = "#ffedd5";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 56, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = scoreColor;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 56, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * result.risk / 100);
+      ctx.stroke();
+      ctx.fillStyle = "#172033";
+      ctx.font = posterFont(950, 42);
+      ctx.textAlign = "center";
+      ctx.fillText(result.risk, cx, cy + 15);
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#172033";
+      ctx.font = posterFont(950, 34);
+      ctx.fillText(`风险评分：${scoreText.title}`, pad + 190, y + 76);
+      ctx.fillStyle = "#6b7280";
+      ctx.font = posterFont(500, 26);
+      drawWrappedText(ctx, scoreText.desc, pad + 190, y + 120, contentWidth - 230, 36, 2);
+      y += 252;
+
+      drawRoundRect(ctx, pad, y, contentWidth, 256, 28, "#ffffff", "#e6ebf2");
+      const listY = y + 58;
+      const columnWidth = (contentWidth - 74) / 2;
+      drawPosterList(ctx, "适合", people.fit, pad + 34, listY, columnWidth, "#12a150");
+      drawPosterList(ctx, "慎选", people.unfit, pad + 34 + columnWidth + 40, listY, columnWidth, "#e5484d");
+      y += 300;
+
+      const adviceLines = wrapCanvasText(ctx, advice, contentWidth - 68, 6);
+      const adviceHeight = Math.max(230, 118 + adviceLines.length * 38);
+      drawRoundRect(ctx, pad, y, contentWidth, adviceHeight, 28, "#eef6ff", "#dbeafe");
+      ctx.fillStyle = "#1f6fff";
+      ctx.font = posterFont(950, 32);
+      ctx.fillText("最终建议", pad + 34, y + 56);
+      ctx.fillStyle = "#243044";
+      ctx.font = posterFont(500, 27);
+      adviceLines.forEach((line, index) => {
+        ctx.fillText(line, pad + 34, y + 112 + index * 38);
+      });
+      y += adviceHeight + 46;
+
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = posterFont(500, 22);
+      const dateText = new Date().toLocaleDateString("zh-CN");
+      ctx.fillText(`生成时间：${dateText}｜结果仅供生活决策参考`, pad, y);
+      y += 56;
+
+      drawRoundRect(ctx, pad, y, contentWidth, 88, 28, "#11223a", "");
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.font = posterFont(950, 58);
+      ctx.fillText("老田说", pad + contentWidth - 246, y + 65);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = posterFont(900, 30);
+      ctx.fillText("杭州通勤租房助手", pad + 34, y + 54);
+      ctx.fillStyle = "#b9c7dc";
+      ctx.font = posterFont(500, 24);
+      ctx.fillText(SHARE_WATERMARK.text, pad + 360, y + 54);
+      y += 126;
+
+      const finalHeight = Math.min(draftHeight, Math.max(1600, Math.ceil(y)));
+      drawPosterWatermark(ctx, width, finalHeight);
+      const output = document.createElement("canvas");
+      output.width = width;
+      output.height = finalHeight;
+      output.getContext("2d").drawImage(canvas, 0, 0);
+      return output;
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const [header, content] = dataUrl.split(",");
+      const mime = header.match(/:(.*?);/)?.[1] || "image/png";
+      const binary = atob(content);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+      return new Blob([bytes], { type: mime });
+    }
+
+    function canvasToPngBlob(canvas) {
+      return new Promise((resolve) => {
+        if (canvas.toBlob) {
+          canvas.toBlob((blob) => resolve(blob || dataUrlToBlob(canvas.toDataURL("image/png"))), "image/png");
+          return;
+        }
+        resolve(dataUrlToBlob(canvas.toDataURL("image/png")));
+      });
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+
+    async function shareReportImage() {
+      if (!lastReport.share) renderReport();
+      const button = document.getElementById("shareImageBtn");
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "生成中...";
+
+      try {
+        const canvas = buildSharePoster(lastReport.share);
+        const blob = await canvasToPngBlob(canvas);
+        const filename = `老田说-杭州通勤测算-${Date.now()}.png`;
+        let shared = false;
+
+        if (typeof File !== "undefined" && navigator.canShare && navigator.share) {
+          const file = new File([blob], filename, { type: "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: "杭州通勤成本测算",
+                text: "我用老田说的杭州通勤租房助手算了一笔账。",
+                files: [file]
+              });
+              shared = true;
+              showToast("长图已打开分享");
+            } catch (error) {
+              if (error?.name === "AbortError") return;
+            }
+          }
+        }
+
+        if (!shared) {
+          downloadBlob(blob, filename);
+          showToast("长图已下载");
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          showToast("生成失败，请再试一次");
+        }
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
     }
 
     function copyReport() {
@@ -2193,6 +2604,7 @@
     });
     document.getElementById("restartBtn").addEventListener("click", () => showStep(1));
     document.getElementById("copyBtn").addEventListener("click", copyReport);
+    document.getElementById("shareImageBtn").addEventListener("click", shareReportImage);
     disableNativeAddressMemory();
     initPoiAutocomplete();
   </script>
